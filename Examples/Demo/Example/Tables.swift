@@ -17,7 +17,7 @@ extension UIViewController {
         let form = FormView(style: style.form)
 
         for tableSection in table.sections {
-            let section = form.appendSection(header: tableSection.value, style: style.section)
+            let section = form.appendSection(header: tableSection.value.header, footer: tableSection.value.footer, style: style.section)
             for item in tableSection {
                 section.appendRow(title: "Index \(item)", subtitle: "Subtitle \(item)")
             }
@@ -35,7 +35,16 @@ extension UIViewController {
                 let label = UILabel()
                 let header = UITableViewHeaderFooterView(view: label, style: style.header, formStyle: style.form, reuseIdentifier: reuseIdentifier)
                 return (header, { item in
-                    label.value = item
+                    label.value = item.header
+                    return NilDisposer()
+                })
+            }
+        }, footerForSection: { table, item in
+            table.dequeueHeaderFooterView(forItem: item) { reuseIdentifier in
+                let label = UILabel()
+                let header = UITableViewHeaderFooterView(view: label, style: style.footer, formStyle: style.form, reuseIdentifier: reuseIdentifier)
+                return (header, { item in
+                    label.value = item.footer
                     return NilDisposer()
                 })
             }
@@ -197,8 +206,13 @@ extension UIViewController {
     }
 }
 
-private var table = Table(sections: [("Header 1", 0..<5), ("Header 2", 5..<10)])
-private var swapTable = Table(sections: [("Header 1", 0..<2), ("Header 1b", 3..<7), ("Header 2", 7..<10)])
+struct Section: SectionReusable, Hashable {
+    var header: String
+    var footer: String
+}
+
+private var table = Table(sections: [(Section(header: "Header 1", footer: "Footer 1"), 0..<5), (Section(header: "Header 2", footer: "Footer 2"), 5..<10)])
+private var swapTable = Table(sections: [(Section(header: "Header 1", footer: "Footer 1"), 0..<2), (Section(header: "Header 1b", footer: "Footer 1b"), 3..<7), (Section(header: "Header 2", footer: "Footer 2"), 7..<10)])
 
 extension Int: Reusable {
     public static func makeAndConfigure() -> (make: RowView, configure: (Int) -> Disposable) {
@@ -217,6 +231,27 @@ extension Double: Reusable {
         return (label, { value in
             label.value = value
             return NilDisposer()
+        })
+    }
+}
+
+/// New additions to Form? Add to CollectionKit as well?
+
+public protocol SectionReusable {
+    associatedtype Header: Reusable
+    associatedtype Footer: Reusable
+    var header: Header { get }
+    var footer: Footer { get }
+}
+
+public extension TableKit where Row: Reusable, Row.ReuseType: ViewRepresentable, Section: SectionReusable, Section.Header.ReuseType: ViewRepresentable, Section.Footer.ReuseType: ViewRepresentable {
+    convenience init(table: Table = Table(), style: DynamicTableViewFormStyle = .default, view: UITableView? = nil, bag: DisposeBag, footerForSection: ((UITableView, Section) -> UIView?)? = nil) {
+        self.init(table: table, style: style, view: view, bag: bag, headerForSection: { table, section in
+            table.dequeueHeaderFooterView(forItem: section.header, style: style.header, formStyle: style.form)
+        }, footerForSection: { table, section in
+            table.dequeueHeaderFooterView(forItem: section.footer, style: style.footer, formStyle: style.form)
+        }, cellForRow: { table, row in
+            table.dequeueCell(forItem: row, style: style)
         })
     }
 }
