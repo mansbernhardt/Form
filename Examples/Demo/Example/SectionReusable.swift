@@ -68,9 +68,9 @@ public protocol SectionReusable {
 public extension TableKit where Row: Reusable, Row.ReuseType: ViewRepresentable, Section: SectionReusable, Section.Header.ReuseType: ViewRepresentable, Section.Footer.ReuseType: ViewRepresentable {
     convenience init(table: Table = Table(), style: DynamicTableViewFormStyle = .default, view: UITableView? = nil, bag: DisposeBag) {
         self.init(table: table, style: style, view: view, bag: bag, headerForSection: { table, section in
-            table.dequeueHeaderFooterView(forItem: section.header, style: style.header, formStyle: style.form)
+            table.dequeueHeaderFooterView(forItem: section.header, style: style.header, formStyle: style.form, reuseIdentifier: "header")
         }, footerForSection: { table, section in
-            table.dequeueHeaderFooterView(forItem: section.footer, style: style.footer, formStyle: style.form)
+            table.dequeueHeaderFooterView(forItem: section.footer, style: style.footer, formStyle: style.form, reuseIdentifier: "footer")
         }, cellForRow: { table, row in
             table.dequeueCell(forItem: row, style: style)
         })
